@@ -277,6 +277,7 @@ class SyntaxChecker:
         self._check_loops()
         self._check_targets()
         self._check_functions()
+        self._check_foreign_operators()
         self._check_static_ranges()
         self._check_interactive_commands()
         if self.reachability:
@@ -615,6 +616,18 @@ class SyntaxChecker:
                         self._target_exists(bl.number, int(target), f"ON {m.group(2)}")
                     else:
                         self.add(bl.number, "ERROR", "ON_TARGETS", f"invalid ON {m.group(2)} target '{target}'")
+
+    def _check_foreign_operators(self) -> None:
+        # MOD between two operands (A MOD 2, (X) MOD Y) is QuickBASIC/BBC syntax. BASIC 7.0
+        # parses it as a variable name and silently computes the wrong value.
+        mod_re = re.compile(r"(?:[A-Z0-9.$%]\s+|\)\s*)MOD\s*(?=[A-Z0-9.(])")
+        for bl in self.lines:
+            masked = _mask_strings(_strip_rem(bl.content)).upper()
+            if mod_re.search(masked):
+                self.add(
+                    bl.number, "ERROR", "NOT_IN_BASIC7",
+                    "MOD does not exist in BASIC 7.0; use A-INT(A/B)*B"
+                )
 
     def _check_functions(self) -> None:
         for bl in self.lines:

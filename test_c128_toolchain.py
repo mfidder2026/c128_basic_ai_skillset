@@ -109,6 +109,16 @@ class SyntaxCheckerTests(unittest.TestCase):
             "IF_THEN", "DO_WITHOUT_LOOP", "MISSING_TARGET"
         }.issubset(codes))
 
+    def test_mod_operator_is_detected(self) -> None:
+        source = """\
+10 n=7
+20 if n mod 2=1 then print "odd":else print "even"
+30 mo=5:print "a mod b":rem n mod 2
+"""
+        issues = check_source(source, reachability=False)
+        mod_lines = [i.line for i in issues if i.code == "NOT_IN_BASIC7"]
+        self.assertEqual(mod_lines, [20])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
